@@ -1,0 +1,86 @@
+---
+title: "Practical Machine Learning Project Writeup"
+author: "Andrey Vykhodtsev"
+date: "21 Dec 2014"
+output: html_document
+---
+
+#Prediction of excersize quality based on Human Activity Recognition
+
+
+##Task definition
+
+Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: [http://groupware.les.inf.puc-rio.br/har] (see the section on the Weight Lifting Exercise Dataset). 
+
+
+
+Data 
+
+
+The training data for this project are available here: 
+
+[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv]
+
+The test data are available here: 
+
+[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv]
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment. 
+
+##Getting and cleaning data
+
+First we read data without any parameters and understand what problems we have inside the data with str command. We see that many columns contain "" and "#DIV/0!". We will load those values as NAs. 
+Also we will delete all the columns that are near-zero or don't deliver information (like X for example).
+
+
+```{r}
+library(caret)
+dt <- read.csv("data//pml-training.csv", na.strings=c("#DIV/0!", ""))
+nz <- nearZeroVar(dt)
+dt <- dt[,-nz]
+dt <- dt[,-1] #removing X
+na.cols <- as.vector(colSums(is.na(dt))>(nrow(dt)*.95))
+dt <- dt[,!na.cols]
+```
+
+We will do the same with testing data, but we remove NA columns present in train data:
+
+```{r}
+dt.test <- read.csv("data//pml-testing.csv", na.strings=c("#DIV/0!", ""))
+dt.test <- dt.test[, -nz]
+dt.test <- dt.test[,-1]
+dt.test <- dt.test[,!na.cols]
+```
+
+Next, we will split data into training and cross-validation partition :
+
+```{r}
+set.seed(777)
+dt.p <- createDataPartition(y=dt$classe, p=.6, list=FALSE)
+dt.train <- dt[dt.p,]
+dt.cv <- dt[-dt.p,]
+```
+
+Now we will teach random forest model on this data.
+
+```{r}
+tc <- trainControl(method="cv", number=10)
+rf <- train(dt.train$classe ~ ., data=dt.train, method = "rf", trainControl=tc)
+```
+
+```{r}
+fit.rpart <- train(classe ~ ., data=dt.train, method = "rf")
+```
+
+```{r}
+pred.rf <- predict(fit.rf, dt.cv)
+confusionMatrix(pred.rf, dt.cv$classe)
+```
+
+```{r}
+pred.rpart <- predict(fit.rpart, dt.cv)
+confusionMatrix(pred.rpart, dt.cv$classe)
+```
+
