@@ -65,22 +65,36 @@ dt.cv <- dt[-dt.p,]
 
 Now we will teach random forest model on this data.
 
-```{r}
-tc <- trainControl(method="cv", number=10)
-rf <- train(dt.train$classe ~ ., data=dt.train, method = "rf", trainControl=tc)
+```{r,cache=TRUE}
+fit.rf <- train(dt.train$classe ~ ., data=dt.train, method = "rf")
 ```
 
-```{r}
-fit.rpart <- train(classe ~ ., data=dt.train, method = "rf")
-```
+Now, we are going to predict values on the data set and create confusion matrix:
 
 ```{r}
-pred.rf <- predict(fit.rf, dt.cv)
-confusionMatrix(pred.rf, dt.cv$classe)
+pred.rf.cv <- predict(fit.rf, dt.cv)
+confusionMatrix(pred.rf.cv, dt.cv$classe)
 ```
 
+We see that Random forest is incredibly accurate - 99.81% Accuracy!
+
+Now it is time to write the submission files
+
 ```{r}
-pred.rpart <- predict(fit.rpart, dt.cv)
-confusionMatrix(pred.rpart, dt.cv$classe)
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
 ```
+
+Lets use our classifier on test data 
+
+```{r}
+pred.rf.tst <- predict(fit.rf, dt.test)
+pml_write_files(pred.rf.tst)
+```
+
 
